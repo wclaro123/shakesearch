@@ -1,3 +1,21 @@
+
+# Main developed features 
+- Case-insensitive search
+- Try multi line search is full text fail 
+- Easy to read search results
+- Keep text spaces and linebreaks
+- Return line number 
+- Highlight search query
+- Return previous and next result lines
+- Limit result numbers
+- Paginate results
+
+# Next steps:
+- Add caching mechanism
+- Make suggestions based in dictionary or common search
+- Stylish presentation layer
+ 
+
 # ShakeSearch
 
 Welcome to the Pulley Shakesearch Take-home Challenge! In this repository,
