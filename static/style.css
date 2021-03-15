@@ -260,3 +260,8 @@ textarea {
     page-break-after: avoid;
   }
 }
+
+td {
+  border: solid black 1px;
+  padding: 20px;
+}

@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"index/suffixarray"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 func main() {
@@ -35,23 +34,43 @@ func main() {
 	}
 }
 
-type Searcher struct {
-	CompleteWorks string
-	SuffixArray   *suffixarray.Index
-}
-
 func handleSearch(searcher Searcher) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		query, ok := r.URL.Query()["q"]
-		if !ok || len(query[0]) < 1 {
+		query := ""
+		page := 1
+		limit := 20
+		q, ok := r.URL.Query()["q"]
+		if !ok || len(q[0]) < 1 {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("missing search query in URL params"))
 			return
 		}
-		results := searcher.Search(query[0])
+		query = q[0]
+
+		var err error
+		p, ok := r.URL.Query()["page"]
+		if ok && len(p[0]) > 0 {
+			page, err = strconv.Atoi(p[0])
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("invalid page in URL params"))
+				return
+			}
+		}
+		l, ok := r.URL.Query()["limit"]
+		if ok && len(p[0]) > 0 {
+			limit, err = strconv.Atoi(l[0])
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("invalid limit in URL params"))
+				return
+			}
+		}
+
+		results := searcher.Search(query, limit, page)
 		buf := &bytes.Buffer{}
 		enc := json.NewEncoder(buf)
-		err := enc.Encode(results)
+		err = enc.Encode(results)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("encoding failure"))
@@ -60,23 +79,4 @@ func handleSearch(searcher Searcher) func(w http.ResponseWriter, r *http.Request
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(buf.Bytes())
 	}
-}
-
-func (s *Searcher) Load(filename string) error {
-	dat, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return fmt.Errorf("Load: %w", err)
-	}
-	s.CompleteWorks = string(dat)
-	s.SuffixArray = suffixarray.New(dat)
-	return nil
-}
-
-func (s *Searcher) Search(query string) []string {
-	idxs := s.SuffixArray.Lookup([]byte(query), -1)
-	results := []string{}
-	for _, idx := range idxs {
-		results = append(results, s.CompleteWorks[idx-250:idx+250])
-	}
-	return results
 }
